@@ -41,7 +41,7 @@ void stat_mean(double *a, double *mean, int dim_i, int dim_j)
 	for (i = 0; i < dim_i; i++) {
 		n = i * dim_j;
 		for (j = 0; j < dim_j; j++) {
-			mean[j] += A[j + n];
+			mean[j] += a[j + n];
 		}
 	}
 
@@ -73,7 +73,7 @@ void stat_std(double *a, double *mean, double *std, int dim_i, int dim_j)
 	for (i = 0; i < dim_i; i++) {
 		n = i * dim_j;
 		for (j = 0; j < dim_j; j++) {
-			std[j] += (A[j + n] - mean[j]) * (A[j + n] - mean[j]);
+			std[j] += (a[j + n] - mean[j]) * (a[j + n] - mean[j]);
 		}
 	}
 
