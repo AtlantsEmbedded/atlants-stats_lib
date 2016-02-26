@@ -1,53 +1,45 @@
 #############################################################################
-# Makefile for building: data_interface 
+# Library Makefile for building: libstats
+# Ron Brash, 2016
 #############################################################################
-
-MAKEFILE      = Makefile
+LIBBASENAME = stats
+MAJVER = 1
+MINVER = 0
+PATCHVER = 0
+# Dont touch these TARGET definitions  they're needed below
+TARGET        = lib$(LIBBASENAME).so.$(MAJVER).$(MINVER).$(PATCHVER)
+TARGETA       = lib$(LIBBASENAME).a
+TARGETD       = lib$(LIBBASENAME).so.$(MAJVER).$(MINVER).$(PATCHVER)
+TARGET0       = lib$(LIBBASENAME).so
+TARGET1       = lib$(LIBBASENAME).so.$(MAJVER)
+TARGET2       = lib$(LIBBASENAME).so.$(MAJVER).$(MINVER)
 
 ####### Compiler, tools and options
-
-CC            = gcc
-CXX           = $(CXX)
-CFLAGS        = -fPIC -pipe -O2 -Wall -W   $(DEFINES) $(X86_DEFINES) $(RASPI_DEFINES)
-CXXFLAGS      =  -pipe -O2 -Wall -W $(DEFINES) $(X86_DEFINES) $(RASPI_DEFINES)
-LINK          = $(CC)
-LFLAGS        = -shared
-GLIB2_CC	  = `pkg-config --cflags glib-2.0`
-GLIB2_LINK	  = `pkg-config --libs glib-2.0`
-
-ifeq ($(ARCH), arm)
-	ARCH_LIBS = -lwiringPi -lwiringPiDev
-	RASPI_DEFINES  =-DRASPI=1
-	INCPATH       = -I. \
-                -Iinclude \
-                -I$(STAGING_DIR)/include \
-                -I$(STAGING_DIR)/usr/include/glib-2.0/
-	CFLAGS=$(TARGET_CFLAGS) -pipe -O2 -Wall -W  $(DEFINES) $(X86_DEFINES) $(RASPI_DEFINES)
-else ifeq ($(ARCH), x86)
-	ARCH_LIBS 	  =
-	X86_DEFINES   =-DX86=1 -g
-	INCPATH       = -I.
-else 
-	ARCH_LIBS 	  =
-	X86_DEFINES   =-DX86=1 -g
-	INCPATH       = -I.
-endif
-
-LIBS          =-L$(STAGING_DIR)/lib -L$(STAGING_DIR)/usr/lib -L. -lm -lglib-2.0 $(ARCH_LIBS)
-AR            = ar cqs
-RANLIB        = 
+LD	      := $(CC)
+CC            := $(CC)
+CXX           := $(CXX)
+LEX           := flex
+YACC          := yacc
+CFLAGS        := -Wall -fPIC $(CFLAGS)
+CXXFLAGS      := -Wall -fPIC $(CXXFLAGS)
+LEXFLAGS      := 
+YACCFLAGS     := -d
+INCPATH       := -I$(STAGING_DIR)/include -I$(STAGING_DIR)/usr/include -I./include/
+LINK          := $(CC) 
+LFLAGS        := -shared -Wl,-soname,$(TARGET)
+LIBS          :=-L$(STAGING_DIR)/lib -L$(STAGING_DIR)/usr/lib -lm -lrt -lwiringPi -lwiringPiDev
+AR            := ar
+AR_ARGS	      := cqs	
+RANLIB        := 
 TAR           = tar -cf
-COMPRESS      = gzip -9f
+GZIP	      = gzip -9f
 COPY          = cp -f
-SED           = sed
-COPY_FILE     = cp -f
-COPY_DIR      = cp -f -R
-STRIP         = strip
-INSTALL_FILE  = install -m 644 -p
+COPY_FILE     = $(COPY)
+COPY_DIR      = $(COPY) -r
+INSTALL_FILE  = $(COPY_FILE)
 INSTALL_DIR   = $(COPY_DIR)
-INSTALL_PROGRAM = install -m 755 -p
 DEL_FILE      = rm -f
-SYMLINK       = ln -f -s
+SYMLINK       = ln -sf
 DEL_DIR       = rmdir
 MOVE          = mv -f
 CHK_DIR_EXISTS= test -d
@@ -59,67 +51,70 @@ OBJECTS_DIR   = ./
 
 ####### Files
 
-SOURCES       = stats.c 
-			
-OBJECTS       = stats.o 
+SOURCES       = src/stats_lib.c
 		
-DIST          = 
-DESTDIR       = #avoid trailing-slash linebreak
-TARGET        = stats.so
-
+OBJECTS       = stats_lib.o
 
 first: all
 ####### Implicit rules
 
-.SUFFIXES: .o .c .cpp .cc .cxx .C
+.SUFFIXES: .c .o .cpp .cc .cxx .C
 
 .cpp.o:
-	$(CXX) -c $(CXXFLAGS) $(INCPATH)  -o "$@" "$<"
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $@ $<
 
 .cc.o:
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $@ $<
 
 .cxx.o:
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $@ $<
 
 .C.o:
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $@ $<
 
 .c.o:
-	$(CC) -c $(CFLAGS) $(INCPATH) -o "$@" "$<"
+	$(CC) -c $(CFLAGS) $(INCPATH) -o $@ $<
 
 ####### Build rules
 
-all: start compile
+all: Makefile  $(TARGET) 
 
-start:
-	@echo "\nStarting Make---------------------------------------\n"
-	@echo " >> $(ARCH) selected....\n"
-	 
-compile: Makefile $(TARGET)
+	@echo "\nBuilding Target------------------------------------\n"
 
-$(TARGET):  $(OBJECTS)
-	@echo "\nLinking----------------------------------------------\n"
-	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS) $(GLIB2_LINK)
+$(TARGET):  $(UICDECLS) $(OBJECTS) $(SUBLIBS) $(OBJCOMP)  
+	-$(DEL_FILE) $(TARGET) $(TARGET0) $(TARGET1) $(TARGET2)
+	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(LIBS) $(OBJCOMP)
+	-ln -s $(TARGET) $(TARGET0)
+	-ln -s $(TARGET) $(TARGET1)
+	-ln -s $(TARGET) $(TARGET2)
 
-dist:
+yaccclean:
+lexclean:
+clean: 
+	-$(DEL_FILE) $(OBJECTS)
+	-$(DEL_FILE) *~ core *.core *.so*
 
+
+####### Sub-libraries
+
+distclean: clean
+	-$(DEL_FILE) $(TARGET) 
+	-$(DEL_FILE) $(TARGET0) $(TARGET1) $(TARGET2) $(TARGETA)
 
 ####### Compile
 
-stats.o: stats.c 
-	$(CC) -c $(CFLAGS) $(INCPATH) -o stats.o stats.c
+stats_lib.o: src/stats.c 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o stats_lib.o src/stats.c
 
-
+####### dependencies
 
 ####### Install
 
-install:   FORCE
+install:  
+	$(MKDIR) $(DESTDIR)/lib/
+	$(COPY_FILE) -a lib$(LIBBASENAME).so* $(DESTDIR)/lib
+	$(COPY_FILE) -a include/*.h $(DESTDIR)/usr/include/
 
 uninstall:   FORCE
-
-clean:
-	find . -name "*.o" -type f -delete
-	rm $(TARGET)
 
 FORCE:
