@@ -104,7 +104,7 @@ distclean: clean
 ####### Compile
 
 stats_lib.o: src/stats.c 
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o stats_lib.o src/stats.c
+	$(CC) -c $(CCFLAGS) $(INCPATH) -o stats_lib.o src/stats.c
 
 ####### dependencies
 
