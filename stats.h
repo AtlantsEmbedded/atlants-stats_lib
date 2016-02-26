@@ -1,6 +1,6 @@
 /**
  * @file stats.h
- * @author Billy Labelle, Atlans embedded
+ * @author Billy Labelle, Atlants embedded
  * @date July, 2015
  * @brief This library contains the headers of the various utility functions to analyse data through statistics
  * presently in stats.c
@@ -23,6 +23,9 @@
 
 /**Calculates the mean of each column of a matrix*/
 void stat_mean(double *a, double *mean, int dim_i, int dim_j);
+
+/** Calculate standard deviation */
+void stat_std(double *a, double *mean, double *std, int dim_i, int dim_j);
 
 /**Removes the mean from each value depending of their column in the matrix*/
 void remove_mean_col(double *a, double *mean,double *b, int dim_i, int dim_j);
